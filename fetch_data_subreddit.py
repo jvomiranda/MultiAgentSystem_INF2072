@@ -4,23 +4,28 @@ import re
 from datetime import datetime
 from utils.reddit_utils import get_reddit_instance
 import os
+from utils.regex_utils import find_declaration_patterns
+import utils.regex_utils
 
 # Regular expressions for self-declarations, update as needed
-SELF_DECLARATION_PATTERNS = [
-    r"\bI am (diagnosed with|have|was diagnosed with|suffer from|live with) (schizo.*|psychosis)\b",
-    r"\bmy schizophrenia\b",
-    r"\bas a schizophrenic\b",
-    r"\bI (was|am) diagnosed with schizophrenia\b",
-    r"\bdiagnosed schizophrenic\b"
-]
-compiled_patterns = [re.compile(pat, flags=re.IGNORECASE) for pat in SELF_DECLARATION_PATTERNS]
 
-def match_self_declaration(text: str) -> bool:
-    # Checks if any combination of regex is matched in the textual input
+
+def match_self_declaration(text: str, pattern_type: str = 'sz') -> bool:
+    """
+    Checks if any self-declaration pattern of a given type matches the input text.
+
+    Parameters:
+        text (str): The input text to check.
+        pattern_type (str): Type of pattern to use ('sz', 'bp', etc.).
+
+    Returns:
+        bool: True if any pattern matches the text, False otherwise.
+    """
+    compiled_patterns = find_declaration_patterns(pattern_type)
     return any(pat.search(text) for pat in compiled_patterns)
 
 # Function to fetch data from subreddits, check for regex and append everything to a csv file
-def fetch_schizophrenia_data(subreddit_name='schizophrenia',
+def fetch_subreddit_data(subreddit_name: str,
                               submission_goal=int(),
                               comment_goal=int()):
     # submission_goal and comment_goal are int variables that specify how many subs and comments you want the code
@@ -49,7 +54,7 @@ def fetch_schizophrenia_data(subreddit_name='schizophrenia',
         author_name = submission.author.name if submission.author else "deleted"
 
         flair_declared = bool(re.search(r'schizo|psychosis', user_flair, flags=re.IGNORECASE))
-        submission_declared = match_self_declaration(submission.selftext + " " + submission.title)
+        submission_declared = match_self_declaration(submission.selftext + " " + submission.title, 'sz')
         any_declared = flair_declared or submission_declared
 
         if any_declared and submissions_found < submission_goal:
@@ -89,7 +94,7 @@ def fetch_schizophrenia_data(subreddit_name='schizophrenia',
                 comment_flair = ""
 
             flair_declared_c = bool(re.search(r'schizo|psychosis', comment_flair, flags=re.IGNORECASE))
-            comment_declared = match_self_declaration(comment.body)
+            comment_declared = match_self_declaration(comment.body,'sz')
             any_declared_c = flair_declared_c or comment_declared
 
             if any_declared_c and comments_found < comment_goal:
