@@ -1,5 +1,5 @@
 import re
-from typing import List, Pattern
+from typing import List, Pattern, Optional, Tuple
 
 PHRASES = [
     r"i have",
@@ -165,6 +165,30 @@ def find_declaration_patterns(pattern_type: str = 'sz') -> List[Pattern]:
 
     return build_declaration_patterns(disorder_terms, PHRASES)
 
+def extract_unique_group_matches(pattern: str, text: str) -> List[str]:
+    """
+    Returns a list of unique captured groups for a given regex pattern in the text.
+
+    Parameters:
+        pattern (str): A regex pattern with capture groups.
+        text (str): The text to search.
+
+    Returns:
+        List[str]: A sorted list of unique matched groups.
+    """
+    regex = re.compile(pattern, flags=re.IGNORECASE)
+    matches = regex.findall(text)
+
+    if not matches:
+        return []
+
+    if isinstance(matches[0], tuple):
+        groups = [group for match in matches for group in match]
+    else:
+        groups = matches
+
+    return sorted(set(groups), key=str.lower)  # sorted alphabetically, case-insensitive
+
 def find_all_but_one_patterns(excluded_type: str) -> List[Pattern]:
     """
     Returns compiled regex patterns for all mental health declaration types
@@ -208,6 +232,45 @@ def find_all_but_one_patterns(excluded_type: str) -> List[Pattern]:
 
     return build_declaration_patterns(combined_disorders, PHRASES)
 
+def find_first_matching_pattern(text: str, patterns: List[re.Pattern]) -> Optional[Tuple[str, str]]:
+    """
+    Returns the first matching regex pattern and the first matched substring.
+
+    Parameters:
+        text (str): The input string to test.
+        patterns (List[Pattern]): List of compiled regex patterns.
+
+    Returns:
+        Optional[Tuple[str, str]]: A tuple of the matched pattern string and matched term,
+                                   or None if no match is found.
+    """
+    for pattern in patterns:
+        match = pattern.search(text)
+        if match:
+            return (pattern.pattern, match.group(0))
+    return None
+
+def find_matching_patterns(text: str, patterns: List[re.Pattern]) -> List[Tuple[str, List[str]]]:
+    """
+    Returns a list of tuples for each regex pattern that matches the input text.
+
+    Each tuple contains:
+        - The pattern string
+        - A list of matched substrings in the text
+
+    Parameters:
+        text (str): The input string to test.
+        patterns (List[Pattern]): List of compiled regex patterns.
+
+    Returns:
+        List[Tuple[str, List[str]]]: List of matching patterns and their matches.
+    """
+    matches = []
+    for pattern in patterns:
+        found = pattern.findall(text)
+        if found:
+            matches.append((pattern.pattern, found))
+    return matches
 
 def get_flair_pattern_for_disorder(disorder_type: str) -> Pattern:
     """
@@ -253,6 +316,54 @@ def get_flair_pattern_for_disorder(disorder_type: str) -> Pattern:
     # Compile with ignore case flag
     return re.compile(combined_pattern, flags=re.IGNORECASE)
 
+def get_flair_pattern_excluding_disorder(disorder_type: str) -> Pattern:
+    """
+    Returns a compiled regex pattern matching flair terms from all disorders
+    EXCEPT the one specified by disorder_type.
+
+    Parameters:
+        disorder_type (str): The key of the disorder to exclude (e.g., 'sz', 'bp', etc.).
+
+    Returns:
+        Pattern: A compiled regex pattern that matches any term from all other disorders.
+                 Returns a regex that matches nothing if no other disorders are found.
+    """
+    disorder_map = {
+        'sz': DISORDERS_SZ,
+        'bp': DISORDERS_BIPOLAR_I + DISORDERS_BIPOLAR_II + DISORDERS_CYCLOTHYMIA,
+        'intellectual': DISORDERS_INTELLECTUAL,
+        'language': DISORDERS_LANGUAGE,
+        'speech_sound': DISORDERS_SPEECH_SOUND,
+        'pragmatic': DISORDERS_PRAGMATIC,
+        'communication': DISORDERS_COMMUNICATION,
+        'autism': DISORDERS_AUTISM,
+        'factitious': DISORDERS_FACTITIOUS,
+        'dementia': DISORDERS_DEMENTIA,
+        'brain_injury': DISORDERS_BRAIN_INJURY,
+        'lewy_body': DISORDERS_LEWY_BODY,
+        'ftld': DISORDERS_FTLD,
+        'parkinson': DISORDERS_PARKINSON,
+        'huntington': DISORDERS_HUNTINGTON,
+        'learning': DISORDERS_LEARNING,
+        'bpd': DISORDERS_BPD,
+    }
+
+    disorder_type = disorder_type.lower()
+    all_keywords = []
+
+    for key, keywords in disorder_map.items():
+        if key != disorder_type:
+            all_keywords.extend(keywords)
+
+    if not all_keywords:
+        return re.compile(r'a^')  # matches nothing
+
+    escaped_keywords = [re.escape(k) for k in all_keywords]
+    combined_pattern = r'\b(' + '|'.join(escaped_keywords) + r')'
+    print(combined_pattern)
+
+    return re.compile(combined_pattern, flags=re.IGNORECASE)
+
 
 def get_term_for_disorder(disorder_type: str):
     """
@@ -292,7 +403,7 @@ def get_term_for_disorder(disorder_type: str):
         return None
 
 
-def get_disorder_for_term(term: str) -> str | None:
+def get_disorder_for_term(term: str):
     """
     Given a term, return the disorder key whose list contains that term.
 

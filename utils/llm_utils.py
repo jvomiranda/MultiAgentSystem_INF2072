@@ -32,20 +32,23 @@ def verify_self_declaration_with_llm(text: str, disorder: str) -> bool:
     Uses the local DeepSeek model via Ollama to verify whether a Reddit post
     is a self-declaration of schizophrenia by evaluating content outside <think></think> tags.
     """
-    print("Post text:")
-    print(text)
-    print('Agent response:')
+    # print("Post text:")
+    # print(text)
+    # print('Agent response:')
     prompt = build_prompt(text, disorder)
-
+    # print("Prompt:")
+    # print(prompt)
+    # print('Agent response:')
     try:
         response = llm.invoke(prompt).strip()
 
         # Remove the content inside <think></think> tags
-        print(response)
+        # print(response)
         cleaned_response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL).strip()
 
         # Now evaluate the content outside of <think></think>
         cleaned_response = cleaned_response.lower()
+        # print(cleaned_response)
 
         # If the response outside <think></think> indicates "yes" or "no", we process it
         if "yes" in cleaned_response:
