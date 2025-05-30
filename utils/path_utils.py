@@ -7,3 +7,4 @@ VERIFIED_USERS_FILE = project_root + '/data/processed/verified_users_step1.csv' 
 OUTPUT_FILE_A3 = project_root + '/data/processed/verified_self_declarations_a3.csv' # Self-declarations that agent3 analyzed
 VERIFIED_USERS_FILE_S2 = project_root + '/data/processed/verified_users_step2.csv'  # Username2 that agent1 flagged "No" for explicit self-declarations of other mental disorder, thus they pass to next steps
 RAW_PATH = project_root + '/data/raw/' # Path to files that did not go through agents yet
+INVALID_USERS_FILE = project_root + '/data/processed/invalid_users.csv'

@@ -4,7 +4,7 @@ import csv
 import utils.llm_utils as llm_utils
 from utils.regex_utils import get_disorder_for_term
 from agents.agent2_englishchecker import is_english
-from utils.path_utils import USER_RECHECK_OTHER_DISORDERS, VERIFIED_USERS_FILE_S2, OUTPUT_FILE_A3, VERIFIED_USERS_FILE
+from utils.path_utils import USER_RECHECK_OTHER_DISORDERS, VERIFIED_USERS_FILE_S2, OUTPUT_FILE_A3, VERIFIED_USERS_FILE, INVALID_USERS_FILE
 from agents.agent1_identifier import save_verified_post
 from fetch_data_user import fetch_user_data_for_other_disorders
 import os
@@ -30,6 +30,7 @@ def run_agent_verify_other_disorders(disorder: str):
     print(f"Agent 3: Starting verification of other disorders")
     users_to_check = []
     mismatch_users = set()
+    invalid_users = set()
 
 
     if os.path.exists(VERIFIED_USERS_FILE):
@@ -76,6 +77,7 @@ def run_agent_verify_other_disorders(disorder: str):
                 if llm_utils.verify_self_declaration_with_llm(full_text, detected_disorder):
                     df.at[idx, "llm_verified"] = True
                     df.at[idx, "other_mental_declaration"] = True
+                    invalid_users.add(username)
                     if username in mismatch_users:
                         mismatch_users.remove(username)
                     with open(OUTPUT_FILE_A3, "a", newline='', encoding="utf-8") as f_s2:
@@ -105,6 +107,18 @@ def run_agent_verify_other_disorders(disorder: str):
     with open(VERIFIED_USERS_FILE_S2, "a", encoding="utf-8") as f_out:
         for username in set(mismatch_users):
             if username not in existing_usernames:
+                f_out.write(f"{username}\n")
+
+    existing_invalid_users = set()
+    if os.path.exists(INVALID_USERS_FILE):
+        with open(INVALID_USERS_FILE, "r", encoding="utf-8") as f_existing_invalid:
+            for line in f_existing_invalid:
+                existing_invalid_users.add(line.strip())
+
+    # Step 2: Append only new usernames
+    with open(INVALID_USERS_FILE, "a", encoding="utf-8") as f_existing_invalid:
+        for username in set(invalid_users):
+            if username not in existing_invalid_users:
                 f_out.write(f"{username}\n")
     print(
         f"Agent 3: Finished verifying self-declarations for disorders other than {disorder}. Verified posts saved to {VERIFIED_USERS_FILE_S2}")
