@@ -4,7 +4,7 @@ import csv
 import utils.llm_utils as llm_utils
 from utils.regex_utils import get_disorder_for_term
 from agents.agent2_englishchecker import is_english
-from utils.path_utils import USER_RECHECK_OTHER_DISORDERS, VERIFIED_USERS_FILE_S2, OUTPUT_FILE_A3, VERIFIED_USERS_FILE, INVALID_USERS_FILE
+from utils.path_utils import USER_RECHECK_OTHER_DISORDERS, VERIFIED_USERS_FILE_S2, OUTPUT_FILE_A1_S2, VERIFIED_USERS_FILE, INVALID_USERS_FILE
 from agents.agent1_identifier import save_verified_post
 from fetch_data_user import fetch_user_data_for_other_disorders
 import os
@@ -80,7 +80,7 @@ def run_agent_verify_other_disorders(disorder: str):
                     invalid_users.add(username)
                     if username in mismatch_users:
                         mismatch_users.remove(username)
-                    with open(OUTPUT_FILE_A3, "a", newline='', encoding="utf-8") as f_s2:
+                    with open(OUTPUT_FILE_A1_S2, "a", newline='', encoding="utf-8") as f_s2:
                         writer = csv.DictWriter(f_s2, fieldnames=expected_field_order, extrasaction="ignore")
                         save_verified_post(post, writer)
 
@@ -88,7 +88,7 @@ def run_agent_verify_other_disorders(disorder: str):
                     df.at[idx, "llm_verified"] = True
                     df.at[idx, "other_mental_declaration"] = False
                     mismatch_users.add(username)
-                    with open(OUTPUT_FILE_A3, "a", newline='', encoding="utf-8") as f_s2:
+                    with open(OUTPUT_FILE_A1_S2, "a", newline='', encoding="utf-8") as f_s2:
                         writer = csv.DictWriter(f_s2, fieldnames=expected_field_order, extrasaction="ignore")
                         save_verified_post(post, writer)
 
